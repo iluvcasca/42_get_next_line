@@ -6,7 +6,7 @@
 /*   By: kgriset <kgriset@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/19 15:31:19 by kgriset           #+#    #+#             */
-/*   Updated: 2023/11/19 16:17:55 by kgriset          ###   ########.fr       */
+/*   Updated: 2023/11/21 22:22:36 by kgriset          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,48 +14,106 @@
 
 char *get_next_line(int fd)
 {
-    char buffer[BUFFER_SIZE];
+    t_line_start *line_start;
+    t_line_char *current;
+    int read_return_value;
+    int count;
     char *line;
-    static int line_start;
-    int line_end;
-    int i;
-    line_end = line_start;
-    i = 0;
-    do {
-        read(fd, buffer, 1);
-        line_end++;
-    }
-    while (buffer[line_end] != '\n');
-    line = malloc (sizeof(char) * (line_end + 1));
-    line[line_end] = '\0';
-    while (buffer[i] != '\n')
+    
+    line_start = malloc(sizeof(*line_start));
+    count = 0;
+    if (!line_start)
     {
-        line[i] = buffer[i];
-        i++;
+        free_get_next_line(line_start);
+        return (NULL);
     }
-    line_start = line_end + 1;
-    return (line);    
+    line_start->fd = fd;
+    line_start->start = add_line_char (line_start, NULL);
+    current = line_start->start;
+    if (!current)
+    {
+        free_get_next_line(line_start);
+        return NULL;
+    }
+    if ( fd < 0 )
+        return (NULL);
+    while ((read_return_value = read(fd, current->character,1)))
+    {
+        count++;
+        if (read_return_value <= 0)
+        {
+            free_get_next_line(line_start);
+            return (NULL);
+        }
+        if (*(current->character) == '\n')
+            break;
+        (void)add_line_char(line_start, current);
+        current = current->next;
+        if (!current)
+        {
+            free_get_next_line(line_start);
+            return (NULL);
+        }
+    }
+    line = malloc(sizeof(char)*count); 
+    if (!line)
+    {
+        free_get_next_line(line_start);
+        return (NULL);
+    }
+    current = line_start->start;
+    count = 0;
+    while (*(current->character) != '\n')
+    {
+        line[count] = *(current->character);
+        count++;
+        current = current->next;
+    }
+    line[count] = '\0';
+    free_get_next_line(line_start);    
+    return (line); 
+}
+
+void free_get_next_line(t_line_start * line_start)
+{
+    t_line_char *current;
+    t_line_char *next;
+    if (line_start->start) 
+    {
+        current = line_start->start;
+        next = current->next;
+        while(next)
+        {
+            free(current);
+            current = next;
+            next = next->next;
+        }
+        free (current);
+    }
+    free (line_start);
+}
+
+t_line_char *add_line_char (t_line_start *start, t_line_char *last) {
+    t_line_char *new;
+
+    new = malloc (sizeof(*new));
+
+    if (!new)
+        return (NULL);
+    if (last)
+        last->next = new;
+    new->next = NULL;    
+    return (new);
 }
 
 #include <stdio.h>
 #include <fcntl.h>
-
 int main()
 {
-    int fd = open("test.txt",O_RDONLY);
-    if ( fd == -1 )
-    {
-        printf ("error\n");
-        return (0);
-    }
-    int i = 0;
-    char * line;
-    while (i != 41)
-    {
-        line = get_next_line(fd);
-        printf("%s\n", line);
-        free(line);
-        i++;
-    }
+    int fd = open("Quran.txt", O_RDONLY);
+    printf("%i\n", fd);
+    char *line = get_next_line(fd);
+    printf("%s\n", line);
+    free (line);
     return (1);
 }
