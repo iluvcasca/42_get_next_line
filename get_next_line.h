@@ -15,18 +15,10 @@
 # define BUFFER_SIZE 42
 # include <stdlib.h>
 # include <unistd.h>
-
-typedef struct s_line_char {
-    char *character;
-    struct s_line_char *next;
-} t_line_char;
-
-typedef struct s_line_start {
-    int fd;
-    struct s_line_char *start;
-} t_line_start;
+typedef struct s_buffer_chunk {
+    struct s_buffer_chunk *next;
+    char buffer[BUFFER_SIZE];
+} t_buffer_chunk;
 
 char *get_next_line(int fd);
-void free_get_next_line(t_line_start * line_start);
-t_line_char *add_line_char (t_line_start *start, t_line_char *last);
 #endif
