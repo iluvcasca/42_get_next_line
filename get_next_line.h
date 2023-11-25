@@ -6,7 +6,7 @@
 /*   By: kgriset <kgriset@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/19 15:22:00 by kgriset           #+#    #+#             */
-/*   Updated: 2023/11/23 20:11:53 by kgriset          ###   ########.fr       */
+/*   Updated: 2023/11/25 15:12:49 by kgriset          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,7 @@ typedef struct s_buffer_chunk {
     char buffer[BUFFER_SIZE];
 } t_buffer_chunk;
 char *get_next_line(int fd);
-size_t is_line (char * buffer);
+size_t  * is_line (char * buffer, size_t is_found_and_index[2]);
 char *build_line(t_buffer_chunk * first, char * remain_buffer, unsigned int node_counter, size_t newline_index);
 t_buffer_chunk *add_back_t_buffer_chunk (t_buffer_chunk *current);
 void free_t_buffer_chunk(t_buffer_chunk **first);

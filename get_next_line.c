@@ -6,7 +6,7 @@
 /*   By: kgriset <kgriset@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/19 15:31:19 by kgriset           #+#    #+#             */
-/*   Updated: 2023/11/23 20:18:51 by kgriset          ###   ########.fr       */
+/*   Updated: 2023/11/25 16:18:39 by kgriset          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,44 +16,55 @@ char *get_next_line(int fd)
 {
     static char remain_buffer[FD_SETSIZE][BUFFER_SIZE];
     char * line;
+    size_t * is_found_and_index;
     t_buffer_chunk * first_node;
     t_buffer_chunk * node;
-    unsigned int line_found;
     unsigned int node_counter;
-
-    line_found = is_line(remain_buffer[fd]);
-    if (line_found)
-        return (extract_remaining(remain_buffer[fd], line_found));
+    is_found_and_index = (size_t[2]){0};
+    is_found_and_index = is_line(remain_buffer[fd], is_found_and_index);
+    if (is_found_and_index[0])
+        return (extract_remaining(remain_buffer[fd], is_found_and_index[1]));
     first_node = add_back_t_buffer_chunk(NULL);
     node_counter = 1;
     node = first_node;
-    read(fd, node->buffer, BUFFER_SIZE);
-    line_found = is_line(node->buffer);
-    while (!line_found) 
+    if (read(fd, node->buffer, BUFFER_SIZE) <= 0)
+    {
+        free_t_buffer_chunk (&first_node);
+        return (NULL);
+    }
+    is_found_and_index = is_line(node->buffer, is_found_and_index);
+    while (!is_found_and_index[0]) 
     {
         add_back_t_buffer_chunk(node);
         node_counter++;
         node = node->next;
         read(fd, node->buffer, BUFFER_SIZE);
-        line_found = is_line(node->buffer);
+        is_found_and_index = is_line(node->buffer, is_found_and_index);
     }
-        line = build_line(first_node, remain_buffer[fd], node_counter, line_found); 
+        line = build_line(first_node, remain_buffer[fd], node_counter, is_found_and_index[1]); 
+        free_t_buffer_chunk (&first_node);
     return (line);
 }
 
-size_t is_line (char * buffer)
+size_t  * is_line (char * buffer, size_t is_found_and_index[2])
 {
     size_t i;
-    size_t newline_index;
     size_t j;
     i = 0;
     j = 0;
     if (!(*buffer))
-        return (0);
-    while (i < BUFFER_SIZE && buffer[i] != '\n' && buffer[i])
+        return is_found_and_index;
+    while (i < BUFFER_SIZE && buffer[i])
+    {
+        if (buffer[i] == '\n')
+        {
+            is_found_and_index[0] = 1;
+            is_found_and_index[1] = i;
+            break;
+        }
         i++;
-    newline_index = i;
-    return (newline_index);
+    }
+    return is_found_and_index;
 }
 
 t_buffer_chunk *add_back_t_buffer_chunk (t_buffer_chunk *current)
@@ -102,15 +113,15 @@ char *build_line(t_buffer_chunk * first, char * remain_buffer, unsigned int node
     while (node_counter--) 
     {
         j = 0;
-        while ((first->buffer)[j] != '\n' && j < BUFFER_SIZE)
+        while ((first->buffer)[j] != '\n' && j < BUFFER_SIZE - 1)
         {
             line [i] = (first->buffer)[j];  
             i++;
             j++;
         }
-        line [i] = (first->buffer)[j];
+        line [i++] = (first->buffer)[j++];
         while (j<BUFFER_SIZE)
-            remain_buffer[k++] = (first->buffer)[++j];
+            remain_buffer[k++] = (first->buffer)[j++];
         remain_buffer[k] = '\0';
         first = first->next;
     }
@@ -160,10 +171,20 @@ size_t gnl_strlen(char * buffer)
 int main()
  {
     int fd = open("Quran.txt", O_RDONLY);
-    printf("%i\n", fd);
-    char *line = get_next_line(fd);
-    printf("%s\n", line);
-    free (line);
-    printf("%i\n", FD_SETSIZE);
+    // printf("%i\n", fd);
+    // char *line = get_next_line(fd);
+    // printf("%s\n", line);
+    // free (line);
+    // printf("%i\n", FD_SETSIZE);
+    int i ;
+    char * line;
+    i = 0;
+    while (i < 14998)
+    {
+        line = get_next_line(fd);
+        printf("%s", line);
+        free (line);
+        i++;
+    }
     return (1);
 }
