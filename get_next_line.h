@@ -6,7 +6,7 @@
 /*   By: kgriset <kgriset@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/19 15:22:00 by kgriset           #+#    #+#             */
-/*   Updated: 2023/11/26 16:19:46 by kgriset          ###   ########.fr       */
+/*   Updated: 2023/11/26 21:08:01 by kgriset          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,7 @@ typedef struct s_buffer_chunk {
 
 typedef struct s_buffer_chunk_control {
     struct s_buffer_chunk * first_node;
+    struct s_buffer_chunk * node;
     unsigned int node_counter;
 } t_buffer_chunk_control;
 
@@ -35,10 +36,13 @@ typedef struct s_newline {
 } t_newline;
 
 char *get_next_line(int fd);
-void  is_line (char * buffer, t_newline * newline, size_t bytes_read);
-char *build_line(t_buffer_chunk * first, char * remain_buffer, unsigned int node_counter, size_t newline_index, size_t bytes_read);
-t_buffer_chunk *add_back_t_buffer_chunk (t_buffer_chunk *current);
+t_buffer_chunk_control add_back_t_buffer_chunk (t_buffer_chunk_control * buffer_chunk_control);
+void init_t_buffer_control (t_buffer_chunk_control * buffer_chunk_control);
 void free_t_buffer_chunk(t_buffer_chunk *first);
-size_t gnl_strlen(char * buffer);
+unsigned int  is_line (char * buffer, t_newline * newline, size_t bytes_read);
 char *extract_remaining_line(char * remain_buffer, size_t newline_index);
+unsigned int check_failure(t_buffer_chunk_control buffer_chunk_control, int bytes_read);
+char *build_line(t_buffer_chunk_control buffer_chunk_control, char * remain_buffer, t_newline newline, int bytes_read);
+size_t gnl_strlen(char * buffer);
+size_t	gnl_strlcpy(char *dst, const char *src, size_t dstsize);
 #endif

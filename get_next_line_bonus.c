@@ -6,7 +6,7 @@
 /*   By: kgriset <kgriset@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/26 16:46:44 by kgriset           #+#    #+#             */
-/*   Updated: 2023/11/26 23:02:50 by kgriset          ###   ########.fr       */
+/*   Updated: 2023/11/26 23:00:53 by kgriset          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -200,25 +200,25 @@ size_t gnl_strlen(char * buffer)
     return (i);
 }
 
-// #include <stdio.h>
-// #include <fcntl.h>
-// int main()
-//  {
-//     int fd = open("newline.txt", O_RDONLY);
-//     // printf("%i\n", fd);
-//     // char *line = get_next_line(fd);
-//     // printf("%s\n", line);
-//     // free (line);
-//     // printf("%i\n", FD_SETSIZE);
-//     int i ;
-//     char * line;
-//     i = 0;
-//     while (i < 3)
-//     {
-//         line = get_next_line(fd);
-//         printf("%s", line);
-//         free (line);
-//         i++;
-//     }
-//     return (1);
-// }   
+#include <stdio.h>
+#include <fcntl.h>
+int main()
+ {
+    int fd = open("newline.txt", O_RDONLY);
+    // printf("%i\n", fd);
+    // char *line = get_next_line(fd);
+    // printf("%s\n", line);
+    // free (line);
+    // printf("%i\n", FD_SETSIZE);
+    int i ;
+    char * line;
+    i = 0;
+    while (i < 3)
+    {
+        line = get_next_line(fd);
+        printf("%s", line);
+        free (line);
+        i++;
+    }
+    return (1);
+}   
