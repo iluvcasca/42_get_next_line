@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   get_next_line_bonus.c                              :+:      :+:    :+:   */
+/*   get_next_line.c                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: kgriset <kgriset@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/26 16:46:44 by kgriset           #+#    #+#             */
-/*   Updated: 2023/11/27 15:18:34 by kgriset          ###   ########.fr       */
+/*   Updated: 2023/11/27 20:06:26 by kgriset          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,117 +14,77 @@
 
 char	*get_next_line(int fd)
 {
-	static char				remain_of_buffer[FD_SETSIZE][BUFFER_SIZE];
-	int						bytes_read;
-	t_buffer_chunk_control	buffer_chunk_control;
-	t_newline				newline;
+	static char	remain[FD_SIZE][BUFFER_SIZE];
+	int			b_read;
+	t_buff_ctrl	buff_ctrl;
+	t_nl		nl;
 
-	if (fd < 0 || fd > FD_SETSIZE || !BUFFER_SIZE)
+	if (fd < 0 || fd > FD_SIZE || BUFFER_SIZE <= 0)
 		return (NULL);
-	if (is_line(remain_of_buffer[fd], &newline, BUFFER_SIZE))
-		return (extract_remaining_line(remain_of_buffer[fd], newline.index));
-	init_t_buffer_control(&buffer_chunk_control);
-	if (!buffer_chunk_control.first_node)
+	if (is_line(remain[fd], &nl, BUFFER_SIZE))
+		return (extract_remaining_line(remain[fd], nl.index));
+	init_t_buff_ctrl(&buff_ctrl);
+	if (!buff_ctrl.first_node)
 		return (NULL);
-	buffer_chunk_control.node = buffer_chunk_control.first_node;
-	bytes_read = read(fd, buffer_chunk_control.node->buffer, BUFFER_SIZE);
-	if (check_failure(buffer_chunk_control, bytes_read,
-			gnl_strlen(remain_of_buffer[fd])))
+	buff_ctrl.node = buff_ctrl.first_node;
+	b_read = read(fd, buff_ctrl.node->buff, BUFFER_SIZE);
+	if (check_failure(buff_ctrl, b_read, gnl_strlen(remain[fd])))
 		return (NULL);
-	while (!is_line(buffer_chunk_control.node->buffer, &newline, bytes_read)
-		&& bytes_read == BUFFER_SIZE)
+	while (!is_line(buff_ctrl.node->buff, &nl, b_read) && b_read == BUFFER_SIZE)
 	{
-		if (check_failure(add_back_t_buffer_chunk(&buffer_chunk_control),
-				bytes_read, gnl_strlen(remain_of_buffer[fd])))
+		if (check_failure(add_back(&buff_ctrl), b_read, gnl_strlen(remain[fd])))
 			return (NULL);
-		bytes_read = read(fd, buffer_chunk_control.node->buffer, BUFFER_SIZE);
+		b_read = read(fd, buff_ctrl.node->buff, BUFFER_SIZE);
 	}
-	return (build_line(buffer_chunk_control, remain_of_buffer[fd], newline,
-			bytes_read));
+	return (build_line(buff_ctrl, remain[fd], nl, b_read));
 }
 
-char	*build_line(t_buffer_chunk_control buffer_chunk_control,
-		char *remain_buffer, t_newline newline, int bytes_read)
+char	*build_line(t_buff_ctrl buff_ctrl, char *remain, t_nl nl, int b_read)
 {
-	size_t	i;
-	char	*line;
-	size_t	s1;
-	size_t	s2;
+	t_build_l	bl;
 
-	s1 = ((buffer_chunk_control.node_counter - 1) * BUFFER_SIZE + newline.index
-			+ 2 + gnl_strlen(remain_buffer));
-	s2 = ((buffer_chunk_control.node_counter - 1) * BUFFER_SIZE + bytes_read + 1
-			+ gnl_strlen(remain_buffer));
-	i = 0;
-	buffer_chunk_control.node = buffer_chunk_control.first_node;
-	if (newline.is_found)
-		line = malloc(sizeof(char) * s1);
+	bl.i = 0;
+	bl.b_remain = b_read - (nl.index + 1);
+	buff_ctrl.node = buff_ctrl.first_node;
+	if (nl.is_found)
+		b_read = nl.index + 1;
+	bl.line = malloc(sizeof(char) * ((buff_ctrl.node_counter - 1) * BUFFER_SIZE
+				+ gnl_strlen(remain) + b_read + 1));
+	if (!bl.line)
+		return (bl.line);
+	bl.i = gnl_strlcpy(bl.line, remain, gnl_strlen(remain));
+	while (buff_ctrl.node_counter-- > 1)
+	{
+		bl.i += gnl_strlcpy(bl.line + bl.i, buff_ctrl.node->buff, BUFFER_SIZE);
+		buff_ctrl.node = buff_ctrl.node->next;
+	}
+	bl.i += gnl_strlcpy(bl.line + bl.i, buff_ctrl.node->buff, b_read);
+	if (nl.is_found)
+		gnl_strlcpy(remain, buff_ctrl.node->buff + nl.index + 1, bl.b_remain);
 	else
-		line = malloc(sizeof(char) * s2);
-	if (!line)
-		return (line);
-	i = gnl_strlcpy(line, remain_buffer, gnl_strlen(remain_buffer));
-	while (buffer_chunk_control.node_counter > 1)
-	{
-		i += gnl_strlcpy(line + i, buffer_chunk_control.node->buffer,
-				BUFFER_SIZE);
-		buffer_chunk_control.node = buffer_chunk_control.node->next;
-		buffer_chunk_control.node_counter--;
-	}
-	if (newline.is_found)
-	{
-		i += gnl_strlcpy(line + i, buffer_chunk_control.node->buffer,
-				newline.index + 1);
-		gnl_strlcpy(remain_buffer, buffer_chunk_control.node->buffer
-			+ newline.index + 1, bytes_read - (newline.index + 1));
-		remain_buffer[bytes_read - (newline.index + 1)] = '\0';
-	}
-	else
-	{
-		i += gnl_strlcpy(line + i, buffer_chunk_control.node->buffer,
-				bytes_read);
-		remain_buffer[0] = '\0';
-	}
-	line[i] = '\0';
-	free_t_buffer_chunk(buffer_chunk_control.first_node);
-	return (line);
+		remain[0] = '\0';
+	remain[bl.b_remain] = '\0';
+	bl.line[bl.i] = '\0';
+	return (free_t_buffer_chunk(buff_ctrl.first_node), bl.line);
 }
 
-size_t	gnl_strlcpy(char *dst, const char *src, size_t dstsize)
+unsigned int	check_failure(t_buff_ctrl buff_ctrl, int b_read,
+		size_t len_remain)
 {
-	size_t	src_len;
-	size_t	i;
-
-	src_len = dstsize;
-	i = 0;
-	if (!dstsize)
-		return (src_len);
-	while (dstsize && src[i])
+	if (b_read <= 0 && !len_remain)
 	{
-		dst[i] = src[i];
-		dstsize--;
-		i++;
-	}
-	return (src_len);
-}
-
-unsigned int	check_failure(t_buffer_chunk_control buffer_chunk_control,
-		int bytes_read, size_t len_remain)
-{
-	if (bytes_read <= 0 && !len_remain)
-	{
-		free_t_buffer_chunk(buffer_chunk_control.first_node);
+		free_t_buffer_chunk(buff_ctrl.first_node);
 		return (1);
 	}
-	if (!buffer_chunk_control.node)
+	if (!buff_ctrl.node)
 	{
-		free_t_buffer_chunk(buffer_chunk_control.first_node);
+		free_t_buffer_chunk(buff_ctrl.first_node);
 		return (1);
 	}
 	return (0);
 }
 
-char	*extract_remaining_line(char *remain_buffer, size_t newline_index)
+char	*extract_remaining_line(char *remain, size_t nl_index)
 {
 	char	*extracted_line;
 	size_t	i;
@@ -132,94 +92,41 @@ char	*extract_remaining_line(char *remain_buffer, size_t newline_index)
 
 	i = 0;
 	j = 0;
-	extracted_line = malloc(sizeof(char) * (newline_index + 2));
+	extracted_line = malloc(sizeof(char) * (nl_index + 2));
 	if (!extracted_line)
 		return (extracted_line);
-	while (i != newline_index + 1)
+	while (i != nl_index + 1)
 	{
-		extracted_line[i] = remain_buffer[i];
+		extracted_line[i] = remain[i];
 		i++;
 	}
 	extracted_line[i] = '\0';
-	while (remain_buffer[i])
-		remain_buffer[j++] = remain_buffer[i++];
-	remain_buffer[j] = remain_buffer[i];
+	while (remain[i])
+		remain[j++] = remain[i++];
+	remain[j] = remain[i];
 	return (extracted_line);
 }
 
-unsigned int	is_line(char *buffer, t_newline *newline, size_t bytes_read)
+unsigned int	is_line(char *buffer, t_nl *nl, size_t b_read)
 {
 	size_t	i;
 
 	i = 0;
-	newline->is_found = 0;
-	newline->index = 0;
+	nl->is_found = 0;
+	nl->index = 0;
 	if (!(*buffer))
-		return (newline->is_found);
-	while (i < bytes_read && buffer[i])
+		return (nl->is_found);
+	while (i < b_read && buffer[i])
 	{
 		if (buffer[i] == '\n')
 		{
-			newline->is_found = 1;
-			newline->index = i;
+			nl->is_found = 1;
+			nl->index = i;
 			break ;
 		}
 		i++;
 	}
-	return (newline->is_found);
-}
-
-void	free_t_buffer_chunk(t_buffer_chunk *first)
-{
-	t_buffer_chunk	*current;
-	t_buffer_chunk	*next;
-
-	current = first;
-	while (current->next)
-	{
-		next = current->next;
-		free(current);
-		current = next;
-	}
-	free(current);
-}
-
-t_buffer_chunk_control	add_back_t_buffer_chunk(t_buffer_chunk_control *buffer_chunk_control)
-{
-	t_buffer_chunk	*last;
-
-	last = malloc(sizeof(*last));
-	buffer_chunk_control->node->next = last;
-	buffer_chunk_control->node = last;
-	buffer_chunk_control->node_counter++;
-	if (!last)
-		return (*buffer_chunk_control);
-	last->next = NULL;
-	last->buffer[0] = 0;
-	return (*buffer_chunk_control);
-}
-
-void	init_t_buffer_control(t_buffer_chunk_control *buffer_chunk_control)
-{
-	t_buffer_chunk	*first_node;
-
-	first_node = malloc(sizeof(*first_node));
-	if (!first_node)
-		return ;
-	first_node->buffer[0] = 0;
-	first_node->next = NULL;
-	buffer_chunk_control->first_node = first_node;
-	buffer_chunk_control->node_counter = 1;
-}
-
-size_t	gnl_strlen(char *buffer)
-{
-	size_t	i;
-
-	i = 0;
-	while (buffer[i])
-		i++;
-	return (i);
+	return (nl->is_found);
 }
 
 // #include <stdio.h>
@@ -231,7 +138,7 @@ size_t	gnl_strlen(char *buffer)
 //     // char *line = get_next_line(fd);
 //     // printf("%s\n", line);
 //     // free (line);
-//     // printf("%i\n", FD_SETSIZE);
+//     // printf("%i\n", FD_SIZE);
 //     int i ;
 //     char * line;
 //     i = 0;

@@ -52,3 +52,6 @@ Mkfile.old
 dkms.conf
 
 gnl*
+*.txt
+alternate
+41_with_nl
