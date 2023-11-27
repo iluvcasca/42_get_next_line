@@ -6,7 +6,7 @@
 /*   By: kgriset <kgriset@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/19 15:22:00 by kgriset           #+#    #+#             */
-/*   Updated: 2023/11/26 21:08:01 by kgriset          ###   ########.fr       */
+/*   Updated: 2023/11/27 12:02:19 by kgriset          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,7 @@ void init_t_buffer_control (t_buffer_chunk_control * buffer_chunk_control);
 void free_t_buffer_chunk(t_buffer_chunk *first);
 unsigned int  is_line (char * buffer, t_newline * newline, size_t bytes_read);
 char *extract_remaining_line(char * remain_buffer, size_t newline_index);
-unsigned int check_failure(t_buffer_chunk_control buffer_chunk_control, int bytes_read);
+unsigned int check_failure(t_buffer_chunk_control buffer_chunk_control, int bytes_read, size_t len_remain);
 char *build_line(t_buffer_chunk_control buffer_chunk_control, char * remain_buffer, t_newline newline, int bytes_read);
 size_t gnl_strlen(char * buffer);
 size_t	gnl_strlcpy(char *dst, const char *src, size_t dstsize);

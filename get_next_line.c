@@ -6,7 +6,7 @@
 /*   By: kgriset <kgriset@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/26 16:46:44 by kgriset           #+#    #+#             */
-/*   Updated: 2023/11/26 23:02:50 by kgriset          ###   ########.fr       */
+/*   Updated: 2023/11/27 14:00:52 by kgriset          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,11 +28,11 @@ char *get_next_line(int fd)
         return (NULL);
     buffer_chunk_control.node = buffer_chunk_control.first_node;
     bytes_read = read(fd, buffer_chunk_control.node->buffer, BUFFER_SIZE);
-    if (check_failure(buffer_chunk_control, bytes_read))
+    if (check_failure(buffer_chunk_control, bytes_read, gnl_strlen(remain_of_buffer[fd])))
         return (NULL);
     while (!is_line(buffer_chunk_control.node->buffer, &newline, bytes_read) && bytes_read == BUFFER_SIZE)
     {
-        if (check_failure(add_back_t_buffer_chunk(&buffer_chunk_control), bytes_read))
+        if (check_failure(add_back_t_buffer_chunk(&buffer_chunk_control), bytes_read, gnl_strlen(remain_of_buffer[fd])))
             return (NULL);
         bytes_read = read(fd, buffer_chunk_control.node->buffer, BUFFER_SIZE);
     }
@@ -67,7 +67,10 @@ char *build_line(t_buffer_chunk_control buffer_chunk_control, char * remain_buff
         remain_buffer[bytes_read - (newline.index + 1)] = '\0';
     }
     else
+{
         i += gnl_strlcpy(line + i, buffer_chunk_control.node->buffer, bytes_read);
+        remain_buffer[0] = '\0';
+    }
     line[i] = '\0';
     free_t_buffer_chunk(buffer_chunk_control.first_node);
     return (line);
@@ -91,9 +94,9 @@ size_t	gnl_strlcpy(char *dst, const char *src, size_t dstsize)
 	return (src_len);
 }
 
-unsigned int check_failure(t_buffer_chunk_control buffer_chunk_control, int bytes_read)
+unsigned int check_failure(t_buffer_chunk_control buffer_chunk_control, int bytes_read, size_t len_remain)
 {
-    if (bytes_read <= 0)
+    if (bytes_read <= 0 && !len_remain)
     {
         free_t_buffer_chunk (buffer_chunk_control.first_node);
         return (1);
@@ -204,7 +207,7 @@ size_t gnl_strlen(char * buffer)
 // #include <fcntl.h>
 // int main()
 //  {
-//     int fd = open("newline.txt", O_RDONLY);
+//     int fd = open("alternate", O_RDWR);
 //     // printf("%i\n", fd);
 //     // char *line = get_next_line(fd);
 //     // printf("%s\n", line);
@@ -213,9 +216,9 @@ size_t gnl_strlen(char * buffer)
 //     int i ;
 //     char * line;
 //     i = 0;
-//     while (i < 3)
+//     while (i < 10)
 //     {
-//         line = get_next_line(fd);
+//         line = get_next_line(0);
 //         printf("%s", line);
 //         free (line);
 //         i++;
