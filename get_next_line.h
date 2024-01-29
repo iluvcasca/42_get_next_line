@@ -6,7 +6,7 @@
 /*   By: kgriset <kgriset@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/19 15:22:00 by kgriset           #+#    #+#             */
-/*   Updated: 2023/11/27 20:00:33 by kgriset          ###   ########.fr       */
+/*   Updated: 2023/11/27 20:24:40 by kgriset          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@
 # include <stdlib.h>
 # include <unistd.h>
 # define FD_SIZE 500
+
 typedef struct s_buffer_chunk
 {
 	struct s_buffer_chunk	*next;
